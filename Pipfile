@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pymupdf = "*"
+certifi = "*"
+pypdf = "*"
+setuptools = "*"
+pandas = "*"
+pytest = "*"
+"pdfminer.six" = "*"
+pytest-mock = "*"
+requests = "*"
+
+
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
