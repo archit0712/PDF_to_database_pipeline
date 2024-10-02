@@ -137,7 +137,7 @@ def status(db):
         c.execute(query)
         output = ""
         for row in c.fetchall():
-            output += f"{row[0]} "+ "|" + f"{row[1]}\n"
+            output += f"{row[0]}"+ "|" + f"{row[1]}\n"
             
         c.execute('''DROP TABLE incidents''')
         
