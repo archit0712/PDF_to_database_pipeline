@@ -32,8 +32,7 @@ def extractingIncidents():
 
     # Split the extracted text into lines.
     lines = all_text.split('\n')
-    
-    
+
     # Clean up the extracted lines if necessary.
     for i in range(5):
         if len(lines) > 0:
@@ -47,26 +46,25 @@ def extractingIncidents():
 
     # Initialize lists to hold the extracted incident data.
     date_times, incident_numbers, locations, natures, incident_oris = [], [], [], [], []
-
+    
     # Loop through the lines and extract incident data.
     for i in range(0, len(lines)):
         if 'Date / Time' in lines[i]: 
             continue
+
         # Check for the pattern indicating the start of an incident record.
         if i + 4 < len(lines) and '/' in lines[i] and ':' in lines[i]:
-            date_times.append(lines[i].strip())
-            
-            incident_numbers.append(lines[i + 1].strip())
-           
-            locations.append(lines[i + 2].strip())
-            if checkingDateAndTime(lines[i + 3].strip()):
-                natures.append("")
-            else:
-                if lines[i + 3].strip() == "RAMP":
-                    natures.append(lines[i+4].strip())
+                date_times.append(lines[i].strip())
+                incident_numbers.append(lines[i + 1].strip())
+                locations.append(lines[i + 2].strip())
+                if checkingDateAndTime(lines[i + 3].strip()):
+                    natures.append("")
                 else:
-                    natures.append(lines[i + 3].strip())
-            incident_oris.append(lines[i + 4].strip())
+                    if lines[i + 3].strip() == "RAMP" :
+                        natures.append(lines[i+4].strip())
+                    else:
+                        natures.append(lines[i + 3].strip())
+                incident_oris.append(lines[i + 4].strip())
 
     # Package the extracted data into a dictionary.
     data = {
@@ -76,7 +74,6 @@ def extractingIncidents():
         'Nature': natures,
         'Incident ORI': incident_oris 
     }
-
     return data
 
 def createDb():
@@ -104,7 +101,7 @@ def storingData(db, data):
                       (data['Date/Time'][i], data['Incident Number'][i], data['Location'][i], data['Nature'][i], data['Incident ORI'][i]))
 
         db.commit()
-        os.remove("incident_data.pdf")
+        # os.remove("incident_data.pdf")
     except Exception as e:
         return e
     
@@ -133,11 +130,12 @@ def fetchFromUrl(url):
 def status(db):
     try: 
         c = db.cursor()
-        query = ''' Select nature, Count(*) as count from incidents group by nature order by count desc, nature asc'''
+        query = '''SELECT nature, COUNT(*) as count FROM incidents 
+                   GROUP BY nature ORDER BY nature ASC;'''
         c.execute(query)
         output = ""
         for row in c.fetchall():
-            output += f"{row[0]}"+ "|" + f"{row[1]}\n"
+            output += row[0] + "|" + str(row[1]) + "\n"
             
         c.execute('''DROP TABLE incidents''')
         
