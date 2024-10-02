@@ -149,27 +149,12 @@ def status(db):
 def main(url):
     
     # Download data
-    fetchFromUrl(url)
-    
-    
-    
+    fetchFromUrl(url) 
     incidents = extractingIncidents()
-    
- 
-    
-  
-    
     db = createDb()
-    
-
-    
     storingData(db, incidents)
-    
-
-   
     output = status(db)
-    
-    print(output)
+    print(output.rstrip())
     
     
 
