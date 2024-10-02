@@ -157,15 +157,15 @@ def main(url):
     
  
     
-    print(" ---------- Data extracted ---------- ")
+  
     
     db = createDb()
     
-    print(" ---------- Database created ---------- ")
+
     
     storingData(db, incidents)
     
-    print(" ---------- Data stored in database ---------- ")
+
    
     output = status(db)
     
