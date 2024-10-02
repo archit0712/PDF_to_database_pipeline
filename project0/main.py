@@ -82,7 +82,7 @@ def extractingIncidents():
 def createDb():
     # Create a new SQLite database.
     try :
-        conn = sqlite3.connect('resources/incident_data.db')
+        conn = sqlite3.connect('resources/normanpd.db')
         c = conn.cursor()
 
         # Create a new table in the database.
