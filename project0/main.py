@@ -61,10 +61,7 @@ def extractingIncidents():
             if checkingDateAndTime(lines[i + 3].strip()):
                 natures.append("Unknown")
             else:
-                if lines[i + 3].strip() == "RAMP":
-                    natures.append(lines[i + 4].strip() if lines[i + 4].strip() else "Unknown")
-                else:
-                    natures.append(lines[i + 3].strip() if lines[i + 3].strip() else "Unknown")
+                natures.append(lines[i + 3].strip() if lines[i + 3].strip() else "Unknown")
 
             # Handle null incident ORI
             incident_oris.append(lines[i + 4].strip() if lines[i + 4].strip() else "Unknown")
