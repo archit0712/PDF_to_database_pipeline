@@ -151,7 +151,7 @@ def status(db):
 def main(url):
     
     # Download data
-    print("URL is this : ",url)
+    # print("URL is this : ",url)
     fetchFromUrl(url) 
     incidents = extractingIncidents()
     db = createDb()
