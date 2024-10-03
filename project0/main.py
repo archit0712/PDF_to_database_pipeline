@@ -127,8 +127,8 @@ def fetchFromUrl(url):
 def status(db):
     try: 
         c = db.cursor()
-        query = '''SELECT nature, COUNT(*) as count FROM incidents 
-                   GROUP BY nature ORDER BY nature ASC;'''
+        query = '''SELECT TRIM(nature), COUNT(*) as count FROM incidents 
+                   GROUP BY TRIM(nature) ORDER BY TRIM(nature) ASC;'''
         c.execute(query)
         output = ""
         for row in c.fetchall():
