@@ -1,9 +1,9 @@
-# cis6930fa24 -- Project 0 -- Incident Report **Process**ing
+# cis6930fa24 -- Project 0 -- Incident Report Processing
 
 Name: Archit Mittal 
 
 # Project Description 
-This project **process**es incident reports from a PDF file, extracts relevant data such as incident date, time, location, and nature, and stores it in a SQLite database. The project provides a summary of the incidents by categorizing them based on the "Nature" field, sorted alphabetically and case-sensitively, and outputs the result in a specific format.
+This project processes incident reports from a PDF file, extracts relevant data such as incident date, time, location, and nature, and stores it in a SQLite database. The project provides a summary of the incidents by categorizing them based on the "Nature" field, sorted alphabetically and case-sensitively, and outputs the result in a specific format.
 
 # How to install
 Install the necessary dependencies using `pipenv`:
