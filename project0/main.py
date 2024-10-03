@@ -157,9 +157,9 @@ def main(url):
     db = createDb()
     storingData(db, incidents)
     output = status(db)
-    print(output.strip())
+    print(output)
     
-    return output.strip()
+    return output
 
 
 if __name__ == '__main__':
