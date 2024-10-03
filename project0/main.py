@@ -138,7 +138,7 @@ def status(db):
     try: 
         c = db.cursor()
         query = '''SELECT TRIM(nature), COUNT(*) as count FROM incidents 
-                   GROUP BY TRIM(nature) ORDER BY TRIM(nature) ASC;'''
+                   GROUP BY TRIM(nature) ORDER BY nature ASC;'''
         c.execute(query)
         output = ""
         for row in c.fetchall():
