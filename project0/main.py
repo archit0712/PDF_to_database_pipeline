@@ -61,8 +61,8 @@ def extractingIncidents():
             if checkingDateAndTime(lines[i + 3].strip()):
                 natures.append("Unknown")
             else:
-                if lines[i + 3].strip() == "RAMP":
-                    natures.append(lines[i + 4].strip() if lines[i + 4].strip() else "Unknown")
+                if lines[i + 3].strip() == "RAMP" or lines[i + 4].strip() == "LINDSEY":
+                    natures.append(lines[i + 5].strip() if lines[i + 5].strip() else "Unknown")
                 else:
                     natures.append(lines[i + 3].strip() if lines[i + 3].strip() else "Unknown")
 
