@@ -18,54 +18,58 @@ def checkingDateAndTime(str):
         return False
 
 def extractingIncidents():
-    # Open the temporary PDF file.
     doc = fitz.open("incident_data.pdf")
-
     all_text = ""
-    # Iterate through each page in the PDF and extract text.
+
+    # Extract text from each page of the PDF.
     for page in doc:
         all_text += page.get_text()
 
-    # Close the PDF document to free resources.
     doc.close()
 
     # Split the extracted text into lines.
     lines = all_text.split('\n')
 
-    # Clean up the extracted lines if necessary.
+    # Debugging: print extracted lines (optional)
+    # print("Extracted lines:", lines)
+
+    # Clean up the extracted lines.
     for i in range(5):
         if len(lines) > 0:
             lines.pop(0)
 
     if len(lines) > 0 and lines[-1] == "":
         lines.pop()
-    
+
     if len(lines) > 0 and ":" in lines[-1] and "/" in lines[-1]:
         lines.pop()
 
     # Initialize lists to hold the extracted incident data.
     date_times, incident_numbers, locations, natures, incident_oris = [], [], [], [], []
-    
-    # Loop through the lines and extract incident data.
+
     for i in range(0, len(lines)):
         if 'Date / Time' in lines[i]: 
             continue
 
-        # Check for the pattern indicating the start of an incident record.
+        # Check if the line has date, time, and is a valid incident record.
         if i + 4 < len(lines) and '/' in lines[i] and ':' in lines[i]:
-                date_times.append(lines[i].strip())
-                incident_numbers.append(lines[i + 1].strip())
-                locations.append(lines[i + 2].strip())
-                if checkingDateAndTime(lines[i + 3].strip()):
-                    natures.append("")
-                else:
-                    if lines[i + 3].strip() == "RAMP" :
-                        natures.append(lines[i+4].strip())
-                    else:
-                        natures.append(lines[i + 3].strip())
-                incident_oris.append(lines[i + 4].strip())
+            date_times.append(lines[i].strip() if lines[i].strip() else "Unknown")  # Handle null/empty date
+            incident_numbers.append(lines[i + 1].strip() if lines[i + 1].strip() else "Unknown")  # Handle null incident number
+            locations.append(lines[i + 2].strip() if lines[i + 2].strip() else "Unknown")  # Handle null location
 
-    # Package the extracted data into a dictionary.
+            # Handle missing nature field
+            if checkingDateAndTime(lines[i + 3].strip()):
+                natures.append("Unknown")
+            else:
+                if lines[i + 3].strip() == "RAMP":
+                    natures.append(lines[i + 4].strip() if lines[i + 4].strip() else "Unknown")
+                else:
+                    natures.append(lines[i + 3].strip() if lines[i + 3].strip() else "Unknown")
+
+            # Handle null incident ORI
+            incident_oris.append(lines[i + 4].strip() if lines[i + 4].strip() else "Unknown")
+
+    # Package the extracted data into a dictionary, replacing any missing fields with "Unknown".
     data = {
         'Date/Time': date_times,
         'Incident Number': incident_numbers,
@@ -73,6 +77,7 @@ def extractingIncidents():
         'Nature': natures,
         'Incident ORI': incident_oris 
     }
+    
     return data
 
 def createDb():
