@@ -1,9 +1,6 @@
 import argparse
 import urllib
 import urllib.request
-import pypdf
-import certifi
-import ssl
 import sqlite3
 import fitz  # PyMuPDF
 import os
@@ -101,7 +98,7 @@ def storingData(db, data):
                       (data['Date/Time'][i], data['Incident Number'][i], data['Location'][i], data['Nature'][i], data['Incident ORI'][i]))
 
         db.commit()
-        # os.remove("incident_data.pdf")
+        os.remove("incident_data.pdf")
     except Exception as e:
         return e
     
@@ -154,7 +151,7 @@ def main(url):
     output = status(db)
     print(output.rstrip())
     
-    
+    return output.rstrip()
 
 
 if __name__ == '__main__':
