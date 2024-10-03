@@ -5,7 +5,17 @@ import sqlite3
 import fitz  # PyMuPDF
 import os
 from datetime import datetime
+import re
 
+# Function to normalize and clean the "nature" field.
+def Normalizing_the_nature(nature):
+    N = nature.strip()  # Removes any leading/trailing spaces
+    N = re.sub(r'\s+', ' ', N)  # Collapses multiple spaces into one
+    # N = re.sub(r'\bemsstat\b', '', N, flags=re.IGNORECASE)  # Removes specific unwanted words like 'emsstat', case-insensitive
+    N = re.sub(r'\b([A-Za-z\s]+?)(?:\s+[A-Z]+(?:\s+[A-Z]+)\b.|\|\s*\d+)$', r'\1', N).strip()
+    N = re.sub(r'(?<!\d)(\d{7})(?!\d)', '', N)  # Removes isolated ORI numbers (7 digits)
+    N = re.sub(r'\s*\d+$', '', N)  # Removes trailing digits that might represent the ORI
+    return N.strip()
 
 # Define a function to check if a string can be parsed into a datetime object.
 def checkingDateAndTime(str):
@@ -58,9 +68,9 @@ def extractingIncidents():
                     natures.append("")
                 else:
                     if lines[i + 3].strip() == "RAMP" :
-                        natures.append(lines[i+4].strip())
+                        natures.append(Normalizing_the_nature(lines[i+4].strip()))
                     else:
-                        natures.append(lines[i + 3].strip())
+                        natures.append(Normalizing_the_nature(lines[i + 3].strip()))
                 incident_oris.append(lines[i + 4].strip())
 
     # Package the extracted data into a dictionary.
