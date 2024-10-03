@@ -57,9 +57,9 @@ def extractingIncidents():
                 if checkingDateAndTime(lines[i + 3].strip()):
                     natures.append("")
                 else:
-                    if lines[i + 3].strip() == "RAMP" :
-                        natures.append(lines[i+4].strip())
-                    else:
+                    # if lines[i + 3].strip() == "RAMP" :
+                    #     natures.append(lines[i+4].strip())
+                    # else:
                         natures.append(lines[i + 3].strip())
                 incident_oris.append(lines[i + 4].strip())
 
