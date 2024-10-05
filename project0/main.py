@@ -88,7 +88,6 @@ def extract_incident_pdf_data(pdf_path):
                 else:
                     column_values[3] = incident_nature
 
-                # column_values[3] = clean_incident_nature(column_values[3])
                 
                 column_values[3] = column_values[3].strip()  # Removes any leading/trailing spaces
                 column_values[3] = re.sub(r'\s+', ' ', column_values[3])  # Collapses multiple spaces into one
@@ -197,8 +196,7 @@ def main(url, db_name='normanpd.db'):       # default database name
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--incidents", type=str, required=True, help="incidents PDF URL")
-    parser.add_argument("--db", type=str, default='normanpd.db', help="SQLite Database name. Defaults to 'normanpd.db'.")
 
     args = parser.parse_args()
-
+    print(args.incidents)
     main(args.incidents)
