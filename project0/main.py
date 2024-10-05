@@ -1,173 +1,204 @@
-import argparse
-import urllib
-import urllib.request
+# Importing the Necessary libraries
+import argparse      
 import sqlite3
-import fitz  # PyMuPDF
-import os
-from datetime import datetime
 import re
+import urllib.request
+import os
+import fitz 
+import pypdf
+from pypdf import PdfReader
 
-
-
-# Define a function to check if a string can be parsed into a datetime object.
-def checkingDateAndTime(str):
+# This function is used to download the data from the given URL of the incidents.
+def download_incident_pdf(url):
     try:
-        datetime.strptime(str, "%d/%m/%Y %H:%M")
-        return True
-    except ValueError:
-        return False
+        headers = {
+            'User-Agent': "Mozilla/5.0 (X11; Linux i686) Chrome/24.0.1312.27 Safari/537.17"
+        }
+        req = urllib.request.Request(url, headers=headers)
+    
+        resources_folder = os.path.join(os.getcwd(), 'resources')
+        os.makedirs(resources_folder, exist_ok=True)
 
-def extractingIncidents():
-    doc = fitz.open("incident_data.pdf")
-    all_text = ""
+        pdf_file_path = os.path.join(resources_folder, 'Incident.PDF')
 
-    # Extract text from each page of the PDF.
-    for page in doc:
-        all_text += page.get_text()
+        with urllib.request.urlopen(req) as response:
+            with open(pdf_file_path, 'wb') as file:
+                file.write(response.read())
+                return pdf_file_path
+    except urllib.error.URLError as e:
+        return None
+    except Exception as e:
+        pass
 
-    doc.close()
 
-    # Split the extracted text into lines.
-    lines = all_text.split('\n')
 
-    # Debugging: print extracted lines (optional)
-    # print("Extracted lines:", lines)
 
-    # Clean up the extracted lines.
-    for i in range(5):
-        if len(lines) > 0:
-            lines.pop(0)
+# Function to extract the contents from the given incidents PDF
+def extract_incident_pdf_data(pdf_path):
+    column_coordinates = [52.56, 150.86, 229.82, 423.19, 623.86]
+    column_values = ["", "", "", "", ""]
+    ORI_pattern = re.compile(r'[A-Z]{2}\d{7}')  # This is how Incident ORI looks like
 
-    if len(lines) > 0 and lines[-1] == "":
-        lines.pop()
+    HEADER_TITLES = {"Date/Time", "Incident Number", "Location", "Nature", "Incident ORI"}
+    pdf_document = fitz.open(pdf_path)  # Opens the PDF
+    incident_records = []
 
-    if len(lines) > 0 and ":" in lines[-1] and "/" in lines[-1]:
-        lines.pop()
+    # Goes through every page in the PDF
+    for page in pdf_document:
+        previous_line = 0
+        previous_block = 1
+        word_items = page.get_text("Words")
 
-    # Initialize lists to hold the extracted incident data.
-    date_times, incident_numbers, locations, natures, incident_oris = [], [], [], [], []
+        current_line = ""
+        current_x = 0
+        for word in word_items:
+            if previous_line == word[6]:  # Checks if the line has the previous word in it
+                current_line = current_line + " " + word[4] if word[7] > 0 else word[4]
+                current_x = word[0]
+            else:  # If the word is in a new line, extract and handle multiple lines
+                for index, column_coordinate in enumerate(column_coordinates):
+                    if index < len(column_coordinates) - 1:
+                        if column_coordinate <= current_x < column_coordinates[index + 1]:
+                            if column_values[index]:
+                                column_values[index] += " " + current_line.strip()
+                            else:
+                                column_values[index] = current_line.strip()
+                    elif index == len(column_coordinates) - 1 and current_x >= column_coordinate:
+                            if column_values[index]:
+                                column_values[index] += " " + current_line.strip()
+                            else:
+                                column_values[index] = current_line.strip()
 
-    for i in range(0, len(lines)):
-        if 'Date / Time' in lines[i]: 
-            continue
+                current_line = word[4]
+                current_x = word[0]
+                previous_line = word[6]
 
-        # Check if the line has date, time, and is a valid incident record.
-        if i + 4 < len(lines) and '/' in lines[i] and ':' in lines[i]:
-            date_times.append(lines[i].strip() if lines[i].strip() else "Unknown")  # Handle null/empty date
-            incident_numbers.append(lines[i + 1].strip() if lines[i + 1].strip() else "Unknown")  # Handle null incident number
-            locations.append(lines[i + 2].strip() if lines[i + 2].strip() else "Unknown")  # Handle null location
+            if word[5] != previous_block:
+                incident_nature = column_values[3].strip()
 
-            # Handle missing nature field
-            if checkingDateAndTime(lines[i + 3].strip()):
-                natures.append("Unknown")
-            else:
-                if lines[i + 3].strip() == "RAMP":
-                    natures.append(lines[i + 4].strip() if lines[i + 4].strip() else "Unknown")
+                # Handle ORI detection with "EMSSTAT"
+                if "EMSSTAT" in incident_nature:
+                    column_values[4] = "EMSSTAT"  # Set "EMSSTAT" as ORI
+                    incident_nature = incident_nature.replace("EMSSTAT", "").strip()
+
+                nature_parts = incident_nature.rsplit(' ', 1)
+                if len(nature_parts) > 1 and ORI_pattern.match(nature_parts[1]):
+                    column_values[3] = nature_parts[0]  # Check if the split string's second part is the Incident ORI
+                    column_values[4] = nature_parts[1]
                 else:
-                    natures.append(lines[i + 3].strip() if lines[i + 3].strip() else "Unknown")
+                    column_values[3] = incident_nature
 
-            # Handle null incident ORI
-            incident_oris.append(lines[i + 4].strip() if lines[i + 4].strip() else "Unknown")
+                # column_values[3] = clean_incident_nature(column_values[3])
+                
+                column_values[3] = column_values[3].strip()  # Removes any leading/trailing spaces
+                column_values[3] = re.sub(r'\s+', ' ', column_values[3])  # Collapses multiple spaces into one
+                column_values[3] = re.sub(r'\bEMSSTAT\b', '', column_values[3], flags=re.IGNORECASE)  # Removes 'EMSSTAT' if present
+                column_values[3] = re.sub(r'\b([A-Za-z\s]+?)(?:\s+[A-Z]+(?:\s+[A-Z]+)\b.|\|\s*\d+)$', r'\1', column_values[3]).strip()
+                column_values[3] = re.sub(r'(?<!\d)(\d{7})(?!\d)', '', column_values[3])  # Removes isolated ORI numbers (7 digits)
+                column_values[3] = re.sub(r'\s*\d+$', '', column_values[3])  # Removes trailing digits that might represent the ORI
+                
 
-    # Package the extracted data into a dictionary, replacing any missing fields with "Unknown".
-    data = {
-        'Date/Time': date_times,
-        'Incident Number': incident_numbers,
-        'Location': locations,
-        'Nature': natures,
-        'Incident ORI': incident_oris 
-    }
-    
-    return data
+                # Check if the current row contains any header and skip it
+                if (column_values[0] not in HEADER_TITLES and 
+                    column_values[1] not in HEADER_TITLES and 
+                    column_values[2] not in HEADER_TITLES and 
+                    column_values[3] not in HEADER_TITLES and 
+                    column_values[4] not in HEADER_TITLES):
 
-def createDb():
-    # Create a new SQLite database.
-    try :
-        conn = sqlite3.connect('resources/normanpd.db')
-        c = conn.cursor()
+                    incident_record = {
+                        "date_time": column_values[0],
+                        "incident_number": column_values[1],
+                        "location": column_values[2],
+                        "nature": column_values[3],
+                        "incident_ori": column_values[4]
+                    }
 
-        # Create a new table in the database.
-        c.execute('''CREATE TABLE incidents
-                    (date_time TEXT, incident_number TEXT, incident_location TEXT, nature TEXT, incident_ori TEXT)''')
+                    # Modify validity check: require only some fields to be non-empty
+                    if all(incident_record[field] for field in ['date_time', 'incident_number', 'location', 'nature']):
+                        incident_records.append(incident_record)
 
-        # Commit the changes and close the connection.
-        return conn
-    except Exception as e:
-        return e
+                # Reset column_values after processing
+                column_values = ["", "", "", "", ""]
+                previous_block = word[5]
 
-def storingData(db, data):
-    # Insert the extracted data into the database.
-    try:
-        c = db.cursor()
-        c.execute("DELETE FROM incidents")  # Clear the table before inserting new data.
-        for i in range(len(data['Date/Time'])):
-            c.execute("INSERT INTO incidents VALUES (?, ?, ?, ?, ?)",
-                      (data['Date/Time'][i], data['Incident Number'][i], data['Location'][i], data['Nature'][i], data['Incident ORI'][i]))
+    pdf_document.close()
 
-        db.commit()
-        os.remove("incident_data.pdf")
-    except Exception as e:
-        return e
-    
-def fetchFromUrl(url):
-    
-    try :
-        if(url is None):
-            return None
-        url = f"{url}"
-        headers ={}
-        headers['User-Agent'] = "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.27 Safari/537.17"
-        data = urllib.request.urlopen(urllib.request.Request(url=url, headers=headers)).read()
-        
-        if data is None:
-            return "No Data found"
-        
-        with open("incident_data.pdf", "wb") as file:
-            file.write(data)
-        return data 
-    
-
-    except Exception as e:
-        return e
-                      
-
-def status(db):
-    try: 
-        c = db.cursor()
-        query = '''SELECT TRIM(nature), COUNT(*) as count FROM incidents 
-                   GROUP BY TRIM(nature) ORDER BY nature ASC;'''
-        c.execute(query)
-        output = ""
-        for row in c.fetchall():
-            output += row[0] + "|" + str(row[1]) + "\n"
-            
-        c.execute('''DROP TABLE incidents''')
-        
-        return output
-    except Exception as e:
-        return e
+    # Returns the valid incidents which contain at least the necessary fields
+    return incident_records
 
 
-def main(url):
-    
-    # Download data
-    # print("URL is this : ",url)
-    fetchFromUrl(url) 
-    incidents = extractingIncidents()
-    db = createDb()
-    storingData(db, incidents)
-    output = status(db)
-    print(output)
-    
-    return output
 
+# Function to create a database, we can either enter the database name in the command line or use the default database name.
+def create_database(db_name):
+    # Create resources directory if it doesn't exist
+    resources_folder = os.path.join(os.getcwd(), 'resources')
+    os.makedirs(resources_folder, exist_ok=True)  
+
+    database_path = os.path.join(resources_folder, db_name) 
+     # Save to resources directory
+    if os.path.exists(database_path):
+        os.remove(database_path)
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+    # Table Creation
+    cursor.execute('''         
+        CREATE TABLE IF NOT EXISTS incidents (          
+            id INTEGER PRIMARY KEY,
+            date_time TEXT,
+            incident_number TEXT,
+            location TEXT,
+            nature TEXT,
+            incident_ori TEXT
+        )
+    ''')
+    conn.commit()         # saving the changes
+    return conn
+
+
+# Function to insert an incident into the database.
+def insert_incident_data(conn, incident):
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO incidents (date_time, incident_number, location, nature, incident_ori)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (incident['date_time'], incident['incident_number'], incident['location'], incident['nature'], incident['incident_ori']))
+    conn.commit()
+
+
+# Function to print the nature and the counts
+def print_nature_counts_data(conn):
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT TRIM(nature), COUNT(*)    
+        FROM incidents 
+        GROUP BY TRIM(nature)
+        ORDER BY nature ASC
+    ''')
+    rows = cursor.fetchall()
+
+    for nature, count in rows:
+        if nature:
+            print(f"{nature}|{count}")    # prints nature and count using separator |
+
+
+# Main function
+def main(url, db_name='normanpd.db'):       # default database name 
+    pdf_data = download_incident_pdf(url)        # download the PDF
+    incident_records = extract_incident_pdf_data(pdf_data)     # Extract the contents
+    conn = create_database(db_name)           # Create the database
+    for incident in incident_records:                  # Insert the data into the database
+        insert_incident_data(conn, incident)
+
+    # Print nature counts
+    print_nature_counts_data(conn)
+
+    conn.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--incidents", type=str, required=True, 
-                         help="Incident summary url.")
-     
-    args = parser.parse_args()
-    if args.incidents:
-        main(args.incidents)
+    parser.add_argument("--incidents", type=str, required=True, help="incidents PDF URL")
+    parser.add_argument("--db", type=str, default='normanpd.db', help="SQLite Database name. Defaults to 'normanpd.db'.")
 
+    args = parser.parse_args()
+
+    main(args.incidents)
