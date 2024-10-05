@@ -25,57 +25,60 @@ pipenv run python main.py --incidents https://www.normanok.gov/sites/default/fil
 
 # Video Demo 
 [![Watch the video](https://lh3.googleusercontent.com/pw/AP1GczNlNM-FeNkXhuDQLX0aoj6SOHn5hwJVj3ufng5VCG_GyU-2LzzKP2JAE_Pf2T24LMBGYhPYfCO_ELt9aAupGMd8qDqsRVec8_XjsMP1EdWkdfk826RUagm9ac_DssHp79BiBWijyKSrkBKXJbAFGkbR0g=w1163-h653-s-no-gm?authuser=1)](https://drive.google.com/file/d/1sv67F4T72bHF_RxwowXfBpeMEwzntbbJ/view?usp=sharing)
+
+
 # Functions
 
-1. **`extractingIncidents()`**:
-    This function reads a PDF file, extracts relevant incident data, and returns it in the form of a dictionary with fields like Date/Time, Incident Number, Location, Nature, and Incident ORI.
+ 1. **`Fetching_Incidents_PDF(url):`**
+   This function downloads a PDF file from the provided URL and saves it to the `resources` directory.
 
     **Parameters:**
-    None.
-
-    **Process**:
-    It opens the incident_data.pdf file, extracts the text, cleans the data, and returns it in a structured format.
+    - `url`: The URL of the PDF file to be downloaded.
 
     **Returns:**
-    A dictionary containing lists for each incident detail (Date/Time, Incident Number, Location, Nature, Incident ORI).
+    - The file path of the downloaded PDF if successful, or `None` otherwise.
 
-2. `fetchFromUrl(url)`:
-    This function downloads the PDF file from the given URL and saves it as incident_data.pdf.
+2. **`Extracting_the_IncidentsPDF_Contents(pdf_path):`**
+   This function reads a PDF file, extracts relevant incident data, and returns it as a list of dictionaries with fields such as `date_time`, `incident_number`, `location`, `nature`, and `incident_ori`.
 
-   **Parameters:**
-
-    * url: The URL of the PDF file to be downloaded.
-    **Process**:
-    Sends an HTTP request to the provided URL and downloads the file.
+    **Parameters:**
+    - `pdf_path`: The path to the downloaded PDF file.
 
     **Returns:**
-    The binary content of the file if successfully fetched, or an error message otherwise.
+    - A list of dictionaries where each dictionary represents one incident.
 
-3. **`createDb():`**
-    This function creates an SQLite database with a table named incidents.
+
+ 3. **`create_database(db_name='normanpd.db'):`**
+   This function creates an SQLite database with a table named `incidents`.
+
+    **Parameters:**
+    - `db_name`: (Optional) The name of the SQLite database. Defaults to 'normanpd.db'.
 
     **Returns:**
-    A connection to the SQLite database.
+    - A connection to the SQLite database.
 
-    **storingData(db, data):**
-    This function takes extracted incident data and stores it into the SQLite database.
+ 5. **`insert_incident_data(conn, incident):`**
+   This function inserts a single incident's data into the `incidents` table in the database.
 
-    **Parameters**:
+    **Parameters:**
+    - `conn`: The database connection object.
+    - `incident`: A dictionary containing a single incident's data.
 
-    * db: The database connection object.
-    * data: A dictionary containing incident details    extracted from the PDF.
+ 6. **`print_nature_counts(conn):`**
+   This function generates a report summarizing the number of occurrences of each type of incident (based on nature), sorted alphabetically and case-sensitively, and prints it in the format `Nature|Count`.
 
-    **Process**:
-    It inserts the data into the incidents table, clearing any old data.
+    **Parameters:**
+    - `conn`: The database connection object.
 
-4. **`status(db):`**
-    This function generates a report summarizing the number of occurrences of each type of incident (based on nature), sorted alphabetically and case-sensitively, and prints it in the format Nature|Count.
+    **Returns:**
+    - Prints the nature count summary directly to the console.
 
-    **Parameters**:
-    * db: The database connection object.
+### 7. **`main(url, db_name='normanpd.db'):`**
+   This is the main function that orchestrates downloading, extracting, storing, and printing incident data.
 
-    **Returns**:
-    The formatted output string displaying the nature of incidents and their count.
+    **Parameters:**
+    - `url`: The URL of the PDF to download.
+    - `db_name`: (Optional) The name of the SQLite database. Defaults to 'normanpd.db'.
 
 # Database Development
 SQLite database named `normanpd.db`.
